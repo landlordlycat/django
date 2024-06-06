@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %} 发布博客 {% endblock %}
+
+{% block head %}
+    <link href="https://unpkg.com/@wangeditor/editor@latest/dist/css/style.css" rel="stylesheet">
+
+    <style>
+        #editor—wrapper {
+            border: 1px solid #ccc;
+            z-index: 100; /* 按需定义 */
+        }
+
+        #toolbar-container {
+            border-bottom: 1px solid #ccc;
+        }
+
+        #editor-container {
+            height: 300px;
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+    <h1>发布博客</h1>
+    <div class="mt-3">
+        <form action="" method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">标题</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="category" class="form-label">分类</label>
+                <select class="form-select" id="category" name="category">
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="content" class="form-label">内容</label>
+                <div id="editor—wrapper">
+                    <div id="toolbar-container"><!-- 工具栏 --></div>
+                    <div id="editor-container"><!-- 编辑器 --></div>
+                </div>
+            </div>
+            <div class="mb-3 text-end">
+                <button type="submit" class="btn btn-primary" id="submit-btn">发布</button>
+            </div>
+        </form>
+    </div>
+    <script src="https://unpkg.com/@wangeditor/editor@latest/dist/index.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        const {createEditor, createToolbar} = window.wangEditor
+
+        const editorConfig = {
+            placeholder: 'Type here...',
+            onChange(editor) {
+                const html = editor.getHtml()
+                // 也可以同步到 <textarea>
+            }
+        }
+
+        const editor = createEditor({
+            selector: '#editor-container',
+            html: '<p><br></p>',
+            config: editorConfig,
+            mode: 'default', // or 'simple'
+        })
+
+        const toolbarConfig = {}
+
+        const toolbar = createToolbar({
+            editor,
+            selector: '#toolbar-container',
+            config: toolbarConfig,
+            mode: 'default', // or 'simple'
+        })
+
+        $('#submit-btn').click(function (e) {
+            e.preventDefault()
+            const title = $('input[name="title"]').val()
+            const category = $('#category').val()
+            const content = editor.getHtml()
+            const csrfmiddlewaretoken = $('input[name="csrfmiddlewaretoken"]').val()
+            $.ajax({
+                url: '/blog/pub',
+                method: 'POST',
+                data: {
+                    title,
+                    category,
+                    content,
+                    csrfmiddlewaretoken
+                },
+                success: function (result) {
+                    if(result.code === "200"){
+                        window.location = '/blog/detail/' + result.data.blog_id
+                    }else{
+                        alert(result.message)
+                    }
+                }
+            })
+        })
+
+    </script>
+{% endblock %}
